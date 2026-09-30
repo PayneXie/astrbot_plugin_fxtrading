@@ -1,4 +1,4 @@
-"""Data models for stock and FX domains."""
+"""FX domain data models."""
 
 from .fx_account import FXAccount
 from .fx_order import FXOrder, OrderIntent, OrderSide

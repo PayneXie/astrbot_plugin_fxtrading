@@ -67,7 +67,7 @@ class PaperTradingPlugin(Star):
     
     def _initialize_handlers(self):
         """初始化命令处理器"""
-            # 交易命令处理器
+        # 交易命令处理器
         self.trading_handlers = TradingCommandHandlers(
             self.trade_coordinator, 
             self.user_interaction,
@@ -102,8 +102,8 @@ class PaperTradingPlugin(Star):
                 logger.info("轮询间隔为0，风控监控服务暂停")
             
             # 注册定时任务
-                if not self._maintenance_task or self._maintenance_task.done():
-                    self._maintenance_task = asyncio.create_task(self._daily_maintenance_task())
+            if not self._maintenance_task or self._maintenance_task.done():
+                self._maintenance_task = asyncio.create_task(self._daily_maintenance_task())
             
             logger.info("FX模拟交易插件启动完成")
         except Exception as e:
@@ -180,13 +180,13 @@ class PaperTradingPlugin(Star):
     @filter.command("fx做多")
     async def long_fx(self, event: AstrMessageEvent):
         """做多开仓"""
-        async for result in self.trading_handlers.handle_market_buy(event):
+        async for result in self.trading_handlers.handle_long_open(event):
             yield result
     
     @filter.command("fx做空")
     async def short_fx(self, event: AstrMessageEvent):
         """做空开仓"""
-        async for result in self.trading_handlers.handle_market_sell(event):
+        async for result in self.trading_handlers.handle_short_open(event):
             yield result
     
     @filter.command("fx平仓")
@@ -204,9 +204,9 @@ class PaperTradingPlugin(Star):
             yield result
     
     @filter.command("fx汇价")
-    async def show_fx_price(self, event: AstrMessageEvent):
+    async def show_fx_quote(self, event: AstrMessageEvent):
         """查询汇价"""
-        async for result in self.query_handlers.handle_stock_price(event):
+        async for result in self.query_handlers.handle_fx_quote(event):
             yield result
 
     @filter.command("fx排行")

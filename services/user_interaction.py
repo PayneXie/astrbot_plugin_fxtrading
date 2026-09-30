@@ -1,9 +1,9 @@
 """用户交互服务 - 实现真正的用户等待交互"""
 import asyncio
-from typing import Optional, Dict, Any, List, Callable, AsyncGenerator
+from typing import Optional, Dict, Any, List, Callable
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, MessageEventResult
-from astrbot.core.utils.session_waiter import SessionWaiter, session_waiter, SessionController
+from astrbot.core.utils.session_waiter import session_waiter, SessionController
 from astrbot.api.message_components import Plain
 from astrbot.core.message.message_event_result import MessageChain
 
@@ -16,82 +16,6 @@ class UserInteractionService:
     
     def __init__(self):
         self.active_sessions = {}
-    
-    async def wait_for_stock_selection(self, event: AstrMessageEvent, candidates: List[Dict[str, str]], 
-                                     action_description: str = "操作") -> tuple[Optional[Dict[str, str]], Optional[str]]:
-        """
-        等待用户选择股票
-        
-        Args:
-            event: 原始事件
-            candidates: 候选股票列表 [{'code', 'name', 'market'}]
-            action_description: 操作描述（用于提示）
-            
-        Returns:
-            (选中的股票信息或None, 错误消息或None)
-        """
-        if not candidates:
-            return None, "没有找到候选股票"
-        
-        if len(candidates) == 1:
-            return candidates[0], None
-        
-        # 构建选择提示
-        selection_text = f"🔍 找到多个相关股票，请选择:\n\n"
-        for i, candidate in enumerate(candidates[:5], 1):  # 最多显示5个
-            selection_text += f"{i}. {candidate['name']} ({candidate['code']}) [{candidate['market']}]\n"
-        selection_text += f"\n💡 请回复数字 1-{min(len(candidates), 5)} 选择股票\n"
-        selection_text += f'💡 或回复"取消"退出{action_description}'
-        
-        # 发送选择提示到事件
-        try:
-            await event.send(MessageChain([Plain(selection_text)]))
-        except Exception as e:
-            logger.error(f"发送选择提示失败: {e}")
-            return None, "发送选择提示失败"
-        
-        try:
-            # 创建会话等待器
-            selected_result = None
-            
-            @session_waiter(timeout=60, record_history_chains=False)
-            async def stock_selection_waiter(controller: SessionController, wait_event: AstrMessageEvent):
-                nonlocal selected_result
-                user_input = wait_event.message_str.strip()
-                
-                # 检查取消命令
-                if user_input.lower() in ['取消', 'cancel', '0', 'q', 'quit']:
-                    selected_result = None
-                    controller.stop()
-                    return
-                
-                # 尝试解析数字选择
-                try:
-                    choice_num = int(user_input)
-                    if 1 <= choice_num <= min(len(candidates), 5):
-                        selected_result = candidates[choice_num - 1]
-                        controller.stop()
-                        return
-                    else:
-                        # 无效选择，继续等待
-                        await wait_event.send(MessageChain([Plain(f"❌ 无效选择，请输入 1-{min(len(candidates), 5)} 的数字")]))
-                        return
-                except ValueError:
-                    # 非数字输入，继续等待
-                    await wait_event.send(MessageChain([Plain('❌ 请输入数字进行选择，或输入"取消"退出')]))
-                    return
-            
-            # 启动等待
-            await stock_selection_waiter(event)
-            if selected_result is None:
-                return None, "用户取消选择"
-            return selected_result, None
-            
-        except asyncio.TimeoutError:
-            return None, "⏰ 选择超时，操作已取消"
-        except Exception as e:
-            logger.error(f"等待用户选择股票失败: {e}")
-            return None, "❌ 操作出现错误，请重试"
     
     async def wait_for_trade_confirmation(self, event: AstrMessageEvent, trade_info: Dict[str, Any]) -> tuple[Optional[bool], Optional[str]]:
         """

@@ -71,6 +71,13 @@
     "max": 1000.0,
     "hint": "单笔成交的最低手续费，可配合手续费率一起使用"
   },
+  "fx_ignore_env_proxy": {
+    "type": "bool",
+    "name": "🌐 AkShare忽略环境代理",
+    "description": "🌐 AkShare请求时临时忽略系统环境代理",
+    "default": true,
+    "hint": "开启后调用AkShare行情接口时会临时移除 HTTP_PROXY / HTTPS_PROXY 等环境变量，适合东方财富源被代理拦截的场景"
+  },
   "fx_week_open_utc_hour": {
     "type": "int",
     "name": "🌅 周度开盘UTC小时",

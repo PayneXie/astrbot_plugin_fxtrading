@@ -38,7 +38,7 @@ class QueryCommandHandlers:
             logger.error(f"查询FX账户信息失败: {e}")
             yield MessageEventResult().message("❌ 查询FX账户失败，请稍后重试")
     
-    async def handle_stock_price(self, event: AstrMessageEvent) -> AsyncGenerator[MessageEventResult, None]:
+    async def handle_fx_quote(self, event: AstrMessageEvent) -> AsyncGenerator[MessageEventResult, None]:
         """查询汇价（支持模糊搜索）"""
         params = event.message_str.strip().split()[1:]
         

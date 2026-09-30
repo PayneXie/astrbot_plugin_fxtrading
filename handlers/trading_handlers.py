@@ -25,12 +25,12 @@ class TradingCommandHandlers:
         self.fx_data_service = fx_data_service or FXDataService(trade_coordinator.storage)
         self.fx_trading_engine = fx_trading_engine or FXTradingEngine(trade_coordinator.storage, self.fx_data_service)
 
-    async def handle_market_buy(self, event: AstrMessageEvent) -> AsyncGenerator[MessageEventResult, None]:
+    async def handle_long_open(self, event: AstrMessageEvent) -> AsyncGenerator[MessageEventResult, None]:
         """市价做多开仓。"""
         async for result in self._handle_fx_open(event, side="long", action_name="做多"):
             yield result
 
-    async def handle_market_sell(self, event: AstrMessageEvent) -> AsyncGenerator[MessageEventResult, None]:
+    async def handle_short_open(self, event: AstrMessageEvent) -> AsyncGenerator[MessageEventResult, None]:
         """市价做空开仓。"""
         async for result in self._handle_fx_open(event, side="short", action_name="做空"):
             yield result
