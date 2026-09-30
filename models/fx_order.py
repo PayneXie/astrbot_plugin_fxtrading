@@ -51,6 +51,7 @@ class FXOrder:
     status: OrderStatus
     create_time: int
     update_time: int
+    commission: float = 0.0
     filled_time: Optional[int] = None
 
     def __post_init__(self):

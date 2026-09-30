@@ -93,6 +93,7 @@ class Formatters:
             f"💎 账户净值: {Formatters.format_currency(account.get('equity', 0.0))}",
             f"📈 已实现盈亏: {account.get('realized_pnl', 0.0):+.2f}",
             f"📊 浮动盈亏: {account.get('unrealized_pnl', 0.0):+.2f}",
+            f"💸 累计手续费: {account.get('total_fees', 0.0):.2f}",
             f"📦 总敞口: {Formatters.format_currency(account.get('gross_exposure', 0.0))}",
             f"⚙️ 最大杠杆: {account.get('max_leverage', 0.0):.2f}x",
         ]
@@ -286,6 +287,7 @@ class Formatters:
                 f"   ✅ 状态: {status_text}\n"
                 f"   💰 价格: {order.get('fill_price', order.get('requested_price', 0)):.5f}  手数: {order.get('volume_lots', 0):.2f} 手\n"
                 f"   ⚙️ 杠杆: {order.get('leverage', 0):.2f}x  名义价值: {Formatters.format_currency(order.get('notional_value', 0.0))}\n"
+                f"   💸 手续费: {order.get('commission', 0.0):.2f}\n"
                 f"   📅 时间: {Formatters.format_timestamp(order.get('update_time', 0))}\n"
                 f"   🆔 订单号: {order.get('order_id', 'N/A')}"
             )
@@ -332,11 +334,13 @@ class Formatters:
 ⚠️ 交易规则:
 • 支持做多、做空、杠杆
 • 按交易对中间价模拟报价，并附加点差
+• 交易时间按 FX 24/5 执行，并包含日常维护窗口
 • 开仓会校验净值与最大杠杆上限
+• 开仓和平仓都会收取手续费
 • 当账户净值 <= 0 时触发强制平仓
 • 仅支持实时成交，不提供限价挂单
 
 💡 提示:
 • 支持交易对代码和中文名称搜索
-• 工作日默认可交易，周末休市
+• 周日开盘到周五收盘之间可交易，维护窗口内暂停交易
 • 平仓请优先使用账户页展示的持仓ID"""

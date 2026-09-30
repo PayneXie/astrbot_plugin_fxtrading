@@ -22,6 +22,12 @@ class FXTradingEngine:
     def _default_contract_size(self) -> float:
         return float(self.storage.get_plugin_config_value("fx_contract_size", 100000.0))
 
+    def _commission_rate(self) -> float:
+        return max(float(self.storage.get_plugin_config_value("fx_commission_rate", 0.000035)), 0.0)
+
+    def _minimum_commission(self) -> float:
+        return max(float(self.storage.get_plugin_config_value("fx_min_commission", 0.0)), 0.0)
+
     def _normalize_lots(self, volume_lots: float) -> float:
         return round(float(volume_lots), 2)
 
@@ -39,6 +45,11 @@ class FXTradingEngine:
         if not position_data:
             return None
         return FXPosition.from_dict(position_data)
+
+    def calculate_commission(self, notional_value: float) -> float:
+        if notional_value <= 0:
+            return 0.0
+        return max(notional_value * self._commission_rate(), self._minimum_commission())
 
     async def place_open_order(
         self,
@@ -103,6 +114,7 @@ class FXTradingEngine:
         notional = self.fx_data_service.calculate_contract_notional(normalized_lots, contract_size, fill_price)
         if not account.can_open_position(notional):
             return False, "杠杆敞口超限，无法开仓", None, None
+        commission = self.calculate_commission(notional)
 
         position = FXPosition(
             position_id=self._new_position_id(),
@@ -128,14 +140,17 @@ class FXTradingEngine:
         position.update_market_price(quote.to_close_price(order_side.value))
 
         order.fill_order(fill_price)
+        order.commission = commission
+        account.apply_fee(commission)
         self.storage.save_fx_order(order.order_id, order.to_dict())
         self.storage.save_fx_position(user_id, position.position_id, position.to_dict())
+        self.storage.save_fx_account(user_id, account.to_dict())
         await self.update_account_state(user_id)
 
         return True, (
             f"开仓成功：{quote.name}({quote.symbol}) "
             f"{'做多' if order_side == OrderSide.LONG else '做空'} "
-            f"{normalized_lots:.2f}手，成交价 {fill_price:.5f}"
+            f"{normalized_lots:.2f}手，成交价 {fill_price:.5f}，手续费 {commission:.2f}"
         ), order, position
 
     async def place_close_order(
@@ -190,7 +205,7 @@ class FXTradingEngine:
         await self._execute_close_order(account, position, order, fill_price)
         return True, (
             f"平仓成功：{position.symbol_name}({position.symbol}) "
-            f"{close_lots:.2f}手，成交价 {fill_price:.5f}"
+            f"{close_lots:.2f}手，成交价 {fill_price:.5f}，手续费 {order.commission:.2f}"
         ), order
 
     async def update_account_state(self, user_id: str, enforce_liquidation: bool = True) -> Optional[FXAccount]:
@@ -318,13 +333,17 @@ class FXTradingEngine:
         close_lots = min(order.volume_lots, position.volume_lots)
         realized_pnl = (fill_price - position.open_price) * position.direction_multiplier()
         realized_pnl *= close_lots * position.contract_size
+        close_notional = close_lots * position.contract_size * fill_price
+        commission = self.calculate_commission(close_notional)
 
         order.fill_order(fill_price, filled_lots=close_lots)
+        order.commission = commission
         if liquidation_reason:
             order.status = OrderStatus.LIQUIDATED
             order.update_time = int(time.time())
 
         account.apply_realized_pnl(realized_pnl)
+        account.apply_fee(commission)
 
         remaining_lots = round(position.volume_lots - close_lots, 2)
         if remaining_lots <= 0:

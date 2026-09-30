@@ -2,7 +2,7 @@
 import asyncio
 import math
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from astrbot.api import logger
@@ -25,6 +25,34 @@ class FXDataService:
         self.storage = storage
         self._cache_ttl = int(self.storage.get_plugin_config_value("fx_quote_cache_seconds", 15))
         self._spread_ratio = float(self.storage.get_plugin_config_value("fx_spread_ratio", 0.0002))
+        self._week_open_minutes = self._load_minute_config("fx_week_open_utc", 22, 5)
+        self._week_close_minutes = self._load_minute_config("fx_week_close_utc", 21, 55)
+        self._daily_break_start_minutes = self._load_minute_config("fx_daily_break_start_utc", 21, 59)
+        self._daily_break_end_minutes = self._load_minute_config("fx_daily_break_end_utc", 22, 5)
+
+    def _load_minute_config(self, key_prefix: str, default_hour: int, default_minute: int) -> int:
+        hour = int(self.storage.get_plugin_config_value(f"{key_prefix}_hour", default_hour))
+        minute = int(self.storage.get_plugin_config_value(f"{key_prefix}_minute", default_minute))
+        hour = min(max(hour, 0), 23)
+        minute = min(max(minute, 0), 59)
+        return hour * 60 + minute
+
+    def _to_utc(self, target_time: Optional[datetime] = None) -> datetime:
+        if target_time is None:
+            return datetime.now(timezone.utc)
+        if target_time.tzinfo is None:
+            local_tz = datetime.now().astimezone().tzinfo
+            target_time = target_time.replace(tzinfo=local_tz)
+        return target_time.astimezone(timezone.utc)
+
+    def _minute_of_day(self, target_time: datetime) -> int:
+        return target_time.hour * 60 + target_time.minute
+
+    def _is_daily_maintenance_break(self, target_time: datetime) -> bool:
+        minute_of_day = self._minute_of_day(target_time)
+        if self._daily_break_start_minutes <= self._daily_break_end_minutes:
+            return self._daily_break_start_minutes <= minute_of_day < self._daily_break_end_minutes
+        return minute_of_day >= self._daily_break_start_minutes or minute_of_day < self._daily_break_end_minutes
 
     def _normalize_symbol(self, symbol: str) -> str:
         if not symbol:
@@ -231,28 +259,58 @@ class FXDataService:
         return normalized_rows
 
     def is_trading_time(self, target_time: Optional[datetime] = None) -> bool:
-        """Simplified FX trading window: open on weekdays."""
-        if target_time is None:
-            target_time = datetime.now()
-        return target_time.weekday() < 5
+        """Broker-like FX 24/5 session in UTC with a short daily maintenance break."""
+        utc_time = self._to_utc(target_time)
+        weekday = utc_time.weekday()
+        minute_of_day = self._minute_of_day(utc_time)
+
+        if weekday == 5:
+            return False
+        if weekday == 6:
+            return minute_of_day >= self._week_open_minutes
+        if weekday == 4 and minute_of_day >= self._week_close_minutes:
+            return False
+        return not self._is_daily_maintenance_break(utc_time)
 
     def can_place_order(self, target_time: Optional[datetime] = None) -> tuple[bool, str]:
-        if self.is_trading_time(target_time):
-            return True, "FX交易时段"
-        return False, "周末休市"
+        utc_time = self._to_utc(target_time)
+        weekday = utc_time.weekday()
+        minute_of_day = self._minute_of_day(utc_time)
+
+        if weekday == 5:
+            return False, "周六休市"
+        if weekday == 6 and minute_of_day < self._week_open_minutes:
+            return False, "周末休市，等待周日开盘"
+        if weekday == 4 and minute_of_day >= self._week_close_minutes:
+            return False, "周度收市，等待周日开盘"
+        if self._is_daily_maintenance_break(utc_time):
+            return False, "日常维护窗口，暂不可交易"
+        return True, "FX交易时段"
 
     def get_market_status(self, target_time: Optional[datetime] = None) -> Dict[str, Any]:
-        if target_time is None:
-            target_time = datetime.now()
-        can_order, reason = self.can_place_order(target_time)
+        utc_time = self._to_utc(target_time)
+        local_time = utc_time.astimezone()
+        can_order, reason = self.can_place_order(utc_time)
         return {
-            "current_time": target_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "current_time": local_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "current_utc_time": utc_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
             "is_trading_time": can_order,
             "can_place_order": can_order,
             "reason": reason,
             "cache_ttl": self._cache_ttl,
             "spread_ratio": self._spread_ratio,
+            "week_open_utc": self._format_minute_config(self._week_open_minutes),
+            "week_close_utc": self._format_minute_config(self._week_close_minutes),
+            "daily_break_utc": (
+                f"{self._format_minute_config(self._daily_break_start_minutes)}-"
+                f"{self._format_minute_config(self._daily_break_end_minutes)}"
+            ),
         }
+
+    def _format_minute_config(self, minute_value: int) -> str:
+        hour = minute_value // 60
+        minute = minute_value % 60
+        return f"{hour:02d}:{minute:02d}"
 
     def calculate_contract_notional(self, volume_lots: float, contract_size: float, market_price: float) -> float:
         if volume_lots <= 0 or contract_size <= 0 or market_price <= 0:

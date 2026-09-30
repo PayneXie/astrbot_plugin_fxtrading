@@ -180,6 +180,7 @@ class QueryCommandHandlers:
         
         try:
             status = self.order_monitor.get_monitor_status()
+            market_status = self.fx_data_service.get_market_status()
             
             # 构建状态信息
             status_text = "📊 FX风控监控状态\n\n"
@@ -210,6 +211,12 @@ class QueryCommandHandlers:
             # 交易时间状态
             fx_trading_icon = "🟢" if status.get('is_fx_trading_time') else "⭕"
             status_text += f"{fx_trading_icon} FX交易时间: {'是' if status.get('is_fx_trading_time') else '否'}\n"
+            status_text += f"🕘 本地时间: {market_status.get('current_time')}\n"
+            status_text += f"🌍 UTC时间: {market_status.get('current_utc_time')}\n"
+            status_text += f"📍 市场状态: {market_status.get('reason')}\n"
+            status_text += f"📆 周度开盘(UTC): 周日 {market_status.get('week_open_utc')}\n"
+            status_text += f"📆 周度收盘(UTC): 周五 {market_status.get('week_close_utc')}\n"
+            status_text += f"🛠️ 维护窗口(UTC): {market_status.get('daily_break_utc')}\n"
             status_text += "💱 实时成交模式: 已启用"
             
             yield MessageEventResult().message(status_text)

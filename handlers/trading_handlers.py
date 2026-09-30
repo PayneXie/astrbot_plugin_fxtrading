@@ -66,12 +66,20 @@ class TradingCommandHandlers:
         symbol = position_data.get("symbol", "N/A")
         display_name = position_data.get("symbol_name", symbol)
         display_lots = volume_lots if volume_lots is not None else position_data.get("volume_lots", 0.0)
+        estimated_fee_text = "未知"
+        quote = await self.fx_data_service.get_quote(symbol, use_cache=False)
+        if quote:
+            close_price = quote.to_close_price(position_data.get("side", "long"))
+            contract_size = float(position_data.get("contract_size", self.fx_trading_engine._default_contract_size()))
+            close_notional = self.fx_data_service.calculate_contract_notional(display_lots, contract_size, close_price)
+            estimated_fee_text = f"{self.fx_trading_engine.calculate_commission(close_notional):.2f}"
         confirmation = (
             "📋 即将执行 FX 平仓\n"
             f"交易对: {display_name} ({symbol})\n"
             f"持仓ID: {position_id}\n"
             f"手数: {display_lots:.2f} 手\n"
-            "类型: 市价平仓"
+            f"类型: 市价平仓\n"
+            f"手续费: {estimated_fee_text}(预估)"
         )
 
         confirmed, error_msg = await self.user_interaction.wait_for_trade_confirmation(
@@ -135,13 +143,21 @@ class TradingCommandHandlers:
             return
 
         execution_price = quote.ask_price if side == "long" else quote.bid_price
+        contract_size = self.fx_trading_engine._default_contract_size()
+        estimated_notional = self.fx_data_service.calculate_contract_notional(
+            parsed["volume_lots"],
+            contract_size,
+            execution_price,
+        )
+        estimated_commission = self.fx_trading_engine.calculate_commission(estimated_notional)
         confirmation = (
             "📋 即将执行 FX 开仓\n"
             f"交易对: {selected_symbol['name']} ({selected_symbol['symbol']})\n"
             f"方向: {'做多' if side == 'long' else '做空'}\n"
             f"手数: {parsed['volume_lots']:.2f} 手\n"
             f"杠杆: {parsed['leverage']:.2f}x\n"
-            f"价格: {execution_price:.5f}(预估成交价)"
+            f"价格: {execution_price:.5f}(预估成交价)\n"
+            f"手续费: {estimated_commission:.2f}(预估)"
         )
 
         confirmed, error_msg = await self.user_interaction.wait_for_trade_confirmation(

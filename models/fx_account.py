@@ -20,6 +20,7 @@ class FXAccount:
     liquidation_enabled: bool
     register_time: int
     last_login: int
+    total_fees: float = 0.0
 
     def __post_init__(self):
         if self.register_time == 0:
@@ -34,7 +35,9 @@ class FXAccount:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "FXAccount":
-        return cls(**data)
+        normalized = dict(data)
+        normalized.setdefault("total_fees", 0.0)
+        return cls(**normalized)
 
     def update_login_time(self):
         self.last_login = int(time.time())
@@ -49,6 +52,15 @@ class FXAccount:
     def apply_realized_pnl(self, realized_pnl: float):
         self.realized_pnl += realized_pnl
         self.balance += realized_pnl
+        self.equity = self.balance + self.unrealized_pnl
+
+    def apply_fee(self, fee_amount: float):
+        fee = max(float(fee_amount), 0.0)
+        if fee == 0:
+            return
+        self.total_fees += fee
+        self.realized_pnl -= fee
+        self.balance -= fee
         self.equity = self.balance + self.unrealized_pnl
 
     def can_open_position(self, additional_notional: float) -> bool:

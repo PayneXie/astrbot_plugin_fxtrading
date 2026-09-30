@@ -52,5 +52,95 @@
     "min": 1.0,
     "max": 1000000.0,
     "hint": "每1手对应的基础货币单位数，默认按标准手100000处理"
+  },
+  "fx_commission_rate": {
+    "type": "float",
+    "name": "💸 FX手续费率",
+    "description": "💸 FX单边手续费率",
+    "default": 0.000035,
+    "min": 0.0,
+    "max": 0.01,
+    "hint": "按成交名义价值收取的单边手续费率，默认约等于每标准手单边3.5"
+  },
+  "fx_min_commission": {
+    "type": "float",
+    "name": "🧾 FX最低手续费",
+    "description": "🧾 FX单边最低手续费",
+    "default": 0.0,
+    "min": 0.0,
+    "max": 1000.0,
+    "hint": "单笔成交的最低手续费，可配合手续费率一起使用"
+  },
+  "fx_week_open_utc_hour": {
+    "type": "int",
+    "name": "🌅 周度开盘UTC小时",
+    "description": "🌅 周度开盘UTC小时",
+    "default": 22,
+    "min": 0,
+    "max": 23,
+    "hint": "默认按周日22:05 UTC开盘"
+  },
+  "fx_week_open_utc_minute": {
+    "type": "int",
+    "name": "🌅 周度开盘UTC分钟",
+    "description": "🌅 周度开盘UTC分钟",
+    "default": 5,
+    "min": 0,
+    "max": 59,
+    "hint": "默认按周日22:05 UTC开盘"
+  },
+  "fx_week_close_utc_hour": {
+    "type": "int",
+    "name": "🌃 周度收盘UTC小时",
+    "description": "🌃 周度收盘UTC小时",
+    "default": 21,
+    "min": 0,
+    "max": 23,
+    "hint": "默认按周五21:55 UTC收盘"
+  },
+  "fx_week_close_utc_minute": {
+    "type": "int",
+    "name": "🌃 周度收盘UTC分钟",
+    "description": "🌃 周度收盘UTC分钟",
+    "default": 55,
+    "min": 0,
+    "max": 59,
+    "hint": "默认按周五21:55 UTC收盘"
+  },
+  "fx_daily_break_start_utc_hour": {
+    "type": "int",
+    "name": "🛠️ 维护开始UTC小时",
+    "description": "🛠️ 维护开始UTC小时",
+    "default": 21,
+    "min": 0,
+    "max": 23,
+    "hint": "默认按每日21:59 UTC进入维护窗口"
+  },
+  "fx_daily_break_start_utc_minute": {
+    "type": "int",
+    "name": "🛠️ 维护开始UTC分钟",
+    "description": "🛠️ 维护开始UTC分钟",
+    "default": 59,
+    "min": 0,
+    "max": 59,
+    "hint": "默认按每日21:59 UTC进入维护窗口"
+  },
+  "fx_daily_break_end_utc_hour": {
+    "type": "int",
+    "name": "✅ 维护结束UTC小时",
+    "description": "✅ 维护结束UTC小时",
+    "default": 22,
+    "min": 0,
+    "max": 23,
+    "hint": "默认按每日22:05 UTC结束维护窗口"
+  },
+  "fx_daily_break_end_utc_minute": {
+    "type": "int",
+    "name": "✅ 维护结束UTC分钟",
+    "description": "✅ 维护结束UTC分钟",
+    "default": 5,
+    "min": 0,
+    "max": 59,
+    "hint": "默认按每日22:05 UTC结束维护窗口"
   }
 }

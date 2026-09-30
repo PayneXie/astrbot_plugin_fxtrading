@@ -45,7 +45,8 @@ class UserCommandHandlers:
                 max_leverage=default_leverage,
                 liquidation_enabled=True,
                 register_time=int(time.time()),
-                last_login=int(time.time())
+                last_login=int(time.time()),
+                total_fees=0.0,
             )
             
             # 保存FX账户
