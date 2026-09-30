@@ -1,0 +1,56 @@
+{
+  "monitor_interval": {
+    "type": "int",
+    "name": "🔍 FX风控轮询间隔（秒）",
+    "description": "🔍 FX风控轮询间隔（秒）",
+    "default": 15,
+    "min": 0,
+    "max": 300,
+    "hint": "后台扫描账户净值与强平条件的间隔时间，设为0时暂停监控，范围0-300秒"
+  },
+  "initial_balance": {
+    "type": "int",
+    "name": "💰 用户注册时的初始资金",
+    "description": "💰 用户注册时的初始资金",
+    "default": 1000000,
+    "min": 0,
+    "max": 10000000,
+    "hint": "新用户注册 FX 账户时获得的虚拟资金额度"
+  },
+  "fx_quote_cache_seconds": {
+    "type": "int",
+    "name": "💱 FX行情缓存秒数",
+    "description": "💱 FX实时行情缓存秒数",
+    "default": 15,
+    "min": 1,
+    "max": 300,
+    "hint": "AkShare 外汇行情缓存时间，范围1-300秒"
+  },
+  "fx_spread_ratio": {
+    "type": "float",
+    "name": "↔️ FX模拟点差比例",
+    "description": "↔️ FX模拟点差比例",
+    "default": 0.0002,
+    "min": 0.0,
+    "max": 0.01,
+    "hint": "用于从中间价推导买卖价的模拟点差比例，例如0.0002表示0.02%"
+  },
+  "fx_default_max_leverage": {
+    "type": "float",
+    "name": "📈 FX默认最大杠杆",
+    "description": "📈 FX账户默认最大杠杆",
+    "default": 20.0,
+    "min": 1.0,
+    "max": 500.0,
+    "hint": "用户 FX 账户默认最大杠杆，开仓时会按净值和杠杆上限校验"
+  },
+  "fx_contract_size": {
+    "type": "float",
+    "name": "📦 FX默认合约规模",
+    "description": "📦 FX每手默认合约规模",
+    "default": 100000.0,
+    "min": 1.0,
+    "max": 1000000.0,
+    "hint": "每1手对应的基础货币单位数，默认按标准手100000处理"
+  }
+}
