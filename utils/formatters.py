@@ -312,12 +312,12 @@ class Formatters:
 /fx注册 - 开通 FX 模拟交易账户
 
 💰 交易指令:
-/fx买入 交易对 手数 杠杆 - 市价做多开仓
-  例: /fx买入 EURUSD 0.10 20
-  例: /fx买入 USDJPY 0.20 30
+/fx做多 交易对 手数 杠杆
+  例: /fx做多 EURUSD 0.10 20
+  例: /fx做多 USDJPY 0.20 30
 
-/fx卖出 交易对 手数 杠杆 - 市价做空开仓
-  例: /fx卖出 EURUSD 0.10 20
+/fx做空 交易对 手数 杠杆
+  例: /fx做空 EURUSD 0.10 20
 
 /fx平仓 持仓ID [手数] - 市价平仓
   例: /fx平仓 FXP-12345678
@@ -325,7 +325,7 @@ class Formatters:
 
 📊 查询指令:
 /fx账户 - 查询 FX 账户与持仓
-/fx汇价 交易对 - 实时汇价
+/fx汇价 [交易对] - 实时汇价
   例: /fx汇价 EURUSD
 /fx排行 - 群内 FX 排行
 /fx历史 - FX 历史订单

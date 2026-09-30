@@ -27,12 +27,12 @@ class TradingCommandHandlers:
 
     async def handle_market_buy(self, event: AstrMessageEvent) -> AsyncGenerator[MessageEventResult, None]:
         """市价做多开仓。"""
-        async for result in self._handle_fx_open(event, side="long", action_name="市价做多"):
+        async for result in self._handle_fx_open(event, side="long", action_name="做多"):
             yield result
 
     async def handle_market_sell(self, event: AstrMessageEvent) -> AsyncGenerator[MessageEventResult, None]:
         """市价做空开仓。"""
-        async for result in self._handle_fx_open(event, side="short", action_name="市价做空"):
+        async for result in self._handle_fx_open(event, side="short", action_name="做空"):
             yield result
 
     async def handle_close_position(self, event: AstrMessageEvent) -> AsyncGenerator[MessageEventResult, None]:
@@ -194,7 +194,7 @@ class TradingCommandHandlers:
     def _parse_fx_open_params(self, params: List[str]) -> tuple[Optional[Dict[str, float]], Optional[str]]:
         """解析FX开仓参数。"""
         if len(params) < 3:
-            return None, "❌ 参数不足\n\n格式: /fx买入 交易对 手数 杠杆\n例: /fx买入 EURUSD 0.10 20"
+            return None, "❌ 参数不足\n\n格式: /fx做多 交易对 手数 杠杆\n例: /fx做多 EURUSD 0.10 20"
 
         keyword = params[0]
         try:

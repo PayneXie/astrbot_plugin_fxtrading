@@ -43,7 +43,24 @@ class QueryCommandHandlers:
         params = event.message_str.strip().split()[1:]
         
         if not params:
-            yield MessageEventResult().message("❌ 请提供交易对代码或名称\n格式: /fx汇价 交易对代码/名称\n例: /fx汇价 EURUSD 或 /fx汇价 美元兑日元")
+            try:
+                quotes = await self.fx_data_service.get_major_quotes(use_cache=False)
+                if not quotes:
+                    yield MessageEventResult().message("❌ 暂时无法获取主流货币对报价，请稍后重试")
+                    return
+
+                lines = ["💱 主流货币对报价"]
+                for quote in quotes:
+                    lines.append(
+                        f"{quote.symbol}  中间价:{quote.mid_price:.5f}  "
+                        f"买入:{quote.ask_price:.5f}  卖出:{quote.bid_price:.5f}  "
+                        f"涨跌:{quote.change_percent:+.2f}%"
+                    )
+                lines.append("\n💡 使用 /fx汇价 交易对 查看单个品种详情")
+                yield MessageEventResult().message("\n".join(lines))
+            except Exception as e:
+                logger.error(f"查询主流货币对失败: {e}")
+                yield MessageEventResult().message("❌ 查询主流货币对失败，请稍后重试")
             return
         
         keyword = params[0]

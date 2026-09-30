@@ -177,15 +177,15 @@ class PaperTradingPlugin(Star):
 
     # ==================== 交易命令 ====================
     
-    @filter.command("fx买入")
-    async def market_buy_fx(self, event: AstrMessageEvent):
-        """市价做多开仓"""
+    @filter.command("fx做多")
+    async def long_fx(self, event: AstrMessageEvent):
+        """做多开仓"""
         async for result in self.trading_handlers.handle_market_buy(event):
             yield result
     
-    @filter.command("fx卖出")
-    async def market_sell_fx(self, event: AstrMessageEvent):
-        """市价做空开仓"""
+    @filter.command("fx做空")
+    async def short_fx(self, event: AstrMessageEvent):
+        """做空开仓"""
         async for result in self.trading_handlers.handle_market_sell(event):
             yield result
     

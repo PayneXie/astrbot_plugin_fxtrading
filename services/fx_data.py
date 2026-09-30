@@ -20,6 +20,16 @@ class FXDataService:
     """Fetch and search FX quotes from AkShare."""
 
     CACHE_PREFIX = "fx:"
+    MAJOR_SYMBOLS = [
+        "EURUSD",
+        "USDJPY",
+        "GBPUSD",
+        "AUDUSD",
+        "USDCAD",
+        "USDCHF",
+        "NZDUSD",
+        "EURJPY",
+    ]
 
     def __init__(self, storage: DataStorage):
         self.storage = storage
@@ -177,6 +187,11 @@ class FXDataService:
             results[symbol] = quote
 
         return results
+
+    async def get_major_quotes(self, use_cache: bool = True) -> List[FXQuote]:
+        """Return a curated list of major FX quotes."""
+        quotes = await self.batch_get_quotes(self.MAJOR_SYMBOLS, use_cache=use_cache)
+        return [quotes[symbol] for symbol in self.MAJOR_SYMBOLS if quotes.get(symbol) is not None]
 
     async def search_symbols(self, keyword: str, limit: int = 8) -> List[Dict[str, Any]]:
         """Search FX symbols by code, name, or currency code."""
