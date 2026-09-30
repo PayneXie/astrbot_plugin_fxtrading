@@ -46,6 +46,8 @@ class QueryCommandHandlers:
             try:
                 quotes = await self.fx_data_service.get_major_quotes(use_cache=False)
                 if not quotes:
+                    quotes = await self.fx_data_service.get_major_quotes(use_cache=True)
+                if not quotes:
                     yield MessageEventResult().message("❌ 暂时无法获取主流货币对报价，请稍后重试")
                     return
 

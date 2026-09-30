@@ -1,6 +1,8 @@
 """FX market data service powered by AkShare."""
 import asyncio
 import math
+import os
+import threading
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -20,6 +22,14 @@ class FXDataService:
     """Fetch and search FX quotes from AkShare."""
 
     CACHE_PREFIX = "fx:"
+    PROXY_ENV_KEYS = [
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+        "http_proxy",
+        "https_proxy",
+        "all_proxy",
+    ]
     MAJOR_SYMBOLS = [
         "EURUSD",
         "USDJPY",
@@ -30,6 +40,7 @@ class FXDataService:
         "NZDUSD",
         "EURJPY",
     ]
+    _proxy_env_lock = threading.Lock()
 
     def __init__(self, storage: DataStorage):
         self.storage = storage
@@ -46,6 +57,26 @@ class FXDataService:
         hour = min(max(hour, 0), 23)
         minute = min(max(minute, 0), 59)
         return hour * 60 + minute
+
+    def _ignore_env_proxy(self) -> bool:
+        return bool(self.storage.get_plugin_config_value("fx_ignore_env_proxy", True))
+
+    def _call_akshare_without_proxy(self, func, *args, **kwargs):
+        if not self._ignore_env_proxy():
+            return func(*args, **kwargs)
+
+        with self._proxy_env_lock:
+            backup = {key: os.environ.get(key) for key in self.PROXY_ENV_KEYS}
+            try:
+                for key in self.PROXY_ENV_KEYS:
+                    os.environ.pop(key, None)
+                return func(*args, **kwargs)
+            finally:
+                for key, value in backup.items():
+                    if value is None:
+                        os.environ.pop(key, None)
+                    else:
+                        os.environ[key] = value
 
     def _to_utc(self, target_time: Optional[datetime] = None) -> datetime:
         if target_time is None:
@@ -86,13 +117,15 @@ class FXDataService:
             return None
 
         try:
-            dataframe = await asyncio.to_thread(ak.forex_spot_em)
+            dataframe = await asyncio.to_thread(self._call_akshare_without_proxy, ak.forex_spot_em)
             if dataframe is None or dataframe.empty:
                 return None
             records = dataframe.to_dict("records")
             return records
         except Exception as exc:
             logger.error(f"获取FX实时行情失败: {exc}")
+            if "ProxyError" in str(exc) or "proxy" in str(exc).lower():
+                logger.error("检测到代理连接失败，已建议使用直连模式访问AkShare行情源")
             return None
 
     async def _fetch_hist_table(self, symbol: str) -> Optional[List[Dict[str, Any]]]:
@@ -103,7 +136,11 @@ class FXDataService:
 
         normalized_symbol = self._normalize_symbol(symbol)
         try:
-            dataframe = await asyncio.to_thread(ak.forex_hist_em, symbol=normalized_symbol)
+            dataframe = await asyncio.to_thread(
+                self._call_akshare_without_proxy,
+                ak.forex_hist_em,
+                symbol=normalized_symbol,
+            )
             if dataframe is None or dataframe.empty:
                 return None
             return dataframe.to_dict("records")

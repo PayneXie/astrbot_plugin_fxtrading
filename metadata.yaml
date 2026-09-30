@@ -1,5 +1,5 @@
 name: astrbot_plugin_fxtrading
 desc: 基于 AkShare 汇率数据的 AstrBot 模拟 FX 交易插件，支持做多、做空、杠杆与强制平仓。
-version: v0.1.1
+version: v0.1.2
 author: Payne
 repo:
